@@ -1,5 +1,7 @@
 __pycache__
 cmake-build-debug
+bin/forward
+build/
 .idea
 linux
 demo/client/build/
