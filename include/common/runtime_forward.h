@@ -2,7 +2,7 @@
  *  负责付费管理引擎和个性化配置在A核的业务逻辑
  */
 /** @addtogroup common
- * \ingroup SPMEMaster
+ * \ingroup forward
  *  @{ */
 /**
 * @file runtime_rvcs.h

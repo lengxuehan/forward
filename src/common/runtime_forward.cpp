@@ -5,6 +5,7 @@
 #include <utility>
 #include "common/exception/errno_exception.h"
 #include "common/file_utility.h"
+#include "common/time_sync.h"
 
 namespace forward{
 namespace common{

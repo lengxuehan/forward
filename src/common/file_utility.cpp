@@ -1,7 +1,3 @@
-//
-// Created by wq on 22-4-28.
-//
-
 #include "common/file_utility.h"
 #include <sys/stat.h>
 #include <dirent.h>

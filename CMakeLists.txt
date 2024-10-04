@@ -11,6 +11,7 @@ FILE(GLOB_RECURSE FORWARD_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/classes
 )
     
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
@@ -25,6 +26,11 @@ elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+
+add_library(xudp STATIC IMPORTED)
+set_property(TARGET xudp PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/lib/libxudp.a)
+
+set(FORWARD_LIBS ${FORWARD_LIBS} xudp)
 
 add_executable(${PROJECT_NAME} ${FORWARD_SRCS})
 target_link_libraries(${PROJECT_NAME} PRIVATE

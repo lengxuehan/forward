@@ -4,7 +4,7 @@
  */
 /**
 * @file file_utility.h
-* @brief utility of file operation for RVCS
+* @brief utility of file operation for forward
 * @details
 * @author		wuting.xu
 * @date		    2024/10/03
