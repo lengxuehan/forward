@@ -1,0 +1,16 @@
+{
+  "sender_channels": [
+    {
+      "channel_id": 1,
+      "target_ip": "1.2.3.4",
+      "target_port": 91001,
+      "data_type": "StructA"
+    },
+    {
+      "channel_id": 2,
+      "target_ip": "1.2.3.4",
+      "target_port": 91002,
+      "data_type": "StructB"
+    }
+  ]
+}

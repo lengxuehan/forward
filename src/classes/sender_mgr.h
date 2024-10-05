@@ -17,24 +17,30 @@
 
 #include "xudp.h"
 #include "nlohmann/json.hpp"
-#include "structs/sender_channel.h"
+#include "xudp_sender.h"
 
 namespace forward{
 namespace classes{
-class XUdpSender {
+class SenderMgr {
 public:
-    explicit XUdpSender(const structs::SenderChannel& channel);
-    virtual ~XUdpSender() = default;
+    explicit SenderMgr(const nlohmann::json& config);
+    virtual ~SenderMgr() = default;
 
+    SenderMgr(SenderMgr const&) = delete;
+    SenderMgr& operator =(SenderMgr const&) = delete;
+    SenderMgr(SenderMgr&&) = delete;
+    SenderMgr& operator=(SenderMgr&&) = delete;
     /**
      * Read in configuration information and initialize runtime from it.
      */
     void initialize();
 
-    void send(const std::vector<uint8_t>& data) const;
+    const std::vector<XUdpSender>& get_senders();
+protected:
+
 private:
-    using SenderChannel = forward::structs::SenderChannel;
-    SenderChannel channel_;
+    const nlohmann::json& config_;        // sender json object of configuration
+    std::vector<XUdpSender> senders_;
 };
 }
 }

@@ -1,0 +1,2 @@
+# git下载xudp的源码到这个目录下，编译后安装到include和lib目录下，可以参考dpdk安装包（或借用chatgpt或claude）生成此脚本
+ 

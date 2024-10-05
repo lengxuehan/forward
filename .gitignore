@@ -1,6 +1,7 @@
 __pycache__
 cmake-build-debug
-bin/forward
+bin/sender
+bin/receiver
 build/
 .idea
 linux
