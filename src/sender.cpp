@@ -21,7 +21,7 @@ int main() {
     std::ifstream ifs(path_to_config_file, std::ios::binary);
     if (!ifs.is_open()){
         std::cout << "failed to open " << path_to_config_file;
-        return false;
+        return 0;
     }
     nlohmann::json config = nlohmann::json::parse(ifs, nullptr, false);
     if (config.is_discarded()){
@@ -103,6 +103,5 @@ int main() {
         }
         
     }
-    
     return 0;
 }
