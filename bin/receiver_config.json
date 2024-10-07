@@ -1,15 +1,15 @@
 {
-  "sender_channels": [
+  "receiver_channels": [
     {
       "channel_id": 1,
-      "target_ip": "1.2.3.4",
-      "target_port": 91001,
+      "local_ip": "8.216.124.6",
+      "local_port": 8100,
       "data_type": "StructA"
     },
     {
       "channel_id": 2,
-      "target_ip": "1.2.3.4",
-      "target_port": 91002,
+      "target_ip": "8.216.124.6",
+      "target_port": 8101,
       "data_type": "StructB"
     }
   ]

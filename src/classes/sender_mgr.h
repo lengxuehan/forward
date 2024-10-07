@@ -35,6 +35,8 @@ public:
      */
     void initialize();
 
+    void set_channel();
+
     const std::vector<XUdpSender>& get_senders();
 protected:
 

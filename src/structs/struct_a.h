@@ -20,6 +20,13 @@ struct alignas(64) StructA {
         Packet packet(data);
         packet << ns << num1 << num2 << total_id << data_id;
     }
+
+    void deserialize(const char* p, uint32_t size) {
+        Packet packet((uint8_t*)p, size);
+        packet >> ns >> num1 >> num2 >> total_id >> data_id;
+    }
+
+    uint64_t recv_ns;
 };
 }
 }

@@ -33,10 +33,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 add_library(xudp STATIC IMPORTED)
 set_property(TARGET xudp PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/lib/libxudp.a)
 
-set(FORWARD_LIBS ${FORWARD_LIBS} xudp)
+set(FORWARD_LIBS ${FORWARD_LIBS} xudp elf)
 
+set(CMAKE_C_COMPILER "/usr/bin/clang")
+set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 add_executable(sender ${FORWARD_SRCS} src/sender.cpp)
-target_link_libraries(sender PRIVATE
+target_link_libraries(sender
     ${FORWARD_LIBS}
 )
 

@@ -39,7 +39,7 @@ public:
         return false;
     }
 
-    static bool get(const nlohmann::json& json, const std::string& key, uint32_t out) {
+    static bool get(const nlohmann::json& json, const std::string& key, uint32_t& out) {
         if(json.contains(key) && json[key].is_number_integer()) {
             out = json[key];
             return true;

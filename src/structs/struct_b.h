@@ -12,12 +12,21 @@ struct alignas(64) StructB {
     uint64_t total_id; // 总编号
     uint64_t data_id;  // 子编号
 
+    uint64_t recv_ns;
+
     void serialize(std::vector<uint8_t>& vec_data) {
         vec_data.clear();
         Packet packet(vec_data);
         packet << ns << num1 << num2;
-        packet.append((uint8_t*)data, 64);
+        packet.serialize((uint8_t*)data, 64);
         packet << total_id << data_id;
+    }
+
+    void deserialize(const char* p, uint32_t size) {
+        Packet packet((uint8_t*)p, size);
+        packet >> ns >> num1 >> num2;
+        packet.parse((uint8_t*)data, 64);
+        packet >> total_id >> data_id;
     }
 };
 }

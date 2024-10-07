@@ -21,6 +21,7 @@
 namespace forward{
 namespace structs{
 
+constexpr auto key_channel_id = "channel_id";
 constexpr auto key_target_ip = "target_ip";
 constexpr auto key_target_port = "target_port";
 constexpr auto key_local_ip = "local_ip";
@@ -33,11 +34,6 @@ public:
      * Read in configuration information and initialize runtime from it.
      */
     virtual bool initialize(const nlohmann::json& json_info) = 0;
-
-protected:
-    std::string str_ip_{};
-    std::string data_type_{};
-    uint32_t    port_{0};
 };
 }
 }

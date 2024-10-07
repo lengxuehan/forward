@@ -19,9 +19,9 @@
 
 namespace forward{
 namespace structs{
-class SenderChannel : public BaseInfo{
+class ReceiverChannel : public BaseInfo{
 public:
-    SenderChannel() = default;
+    ReceiverChannel() = default;
     /**
      * Read in configuration information and initialize runtime from it.
      */

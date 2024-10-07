@@ -1,9 +1,0 @@
-{
-  "sender": [
-    {
-      "target_ip": "",
-      "target_port": 91001,
-      "data_type": "test"
-    }
-  ]
-}

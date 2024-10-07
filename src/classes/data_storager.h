@@ -60,6 +60,7 @@ struct alignas(64) TradesData {
 #include <mutex>
 
 #include "structs/struct_a.h"
+#include "structs/struct_b.h"
 
 using namespace forward::structs;
 
@@ -69,7 +70,7 @@ public:
         : dir_(dir), file_type_(file_type) {}
 
 protected:
-    virtual void flushBuffer(const std::string& symbol, const std::string& exchange) = 0;
+    virtual void flushBuffer() = 0;
 
     std::string getDateFromTimestamp(int64_t ts) {
         std::time_t time = static_cast<std::time_t>(ts / 1000);
@@ -79,11 +80,9 @@ protected:
         return std::string(date);
     }
 
-    std::filesystem::path generatePath(const std::string& symbol, const std::string& exchange, const std::string& date) {
+    std::filesystem::path generatePath(const std::string& date) {
         std::filesystem::path p = dir_;
-        p /= exchange;
         p /= data_type_;
-        p /= symbol;
         p += "/" + date + "." + file_type_;
         return p;
     }
@@ -105,7 +104,7 @@ protected:
     std::map<std::string, std::ofstream> csv_open_files_;
 
     static constexpr size_t MAX_BUFFER_SIZE = 600;
-    std::map<std::string, std::string> last_date_;
+    std::string last_date_;
     std::mutex mutex_;
 };
 
@@ -119,42 +118,38 @@ public:
     ~StructAStorager() {
         std::lock_guard<std::mutex> lock(mutex_);  // 确保在此过程中没有其他线程尝试写入
 
-        for (const auto& [symbol, _] : strucA_buffer_) {
-            //flushBuffer(symbol, exchange_to_string(_[0].exchange));  // 保存缓冲区数据
-        }
+        flushBuffer();  // 保存缓冲区数据
 
         for (auto& [path, file] : csv_open_files_) {
             if (file.is_open()) {
                 file.close();  // 关闭文件
             }
         }
-        csv_open_files_.clear();  // 清空 map
+        csv_open_files_.clear();  // 清空map
     }
 
-    void asyncWrite(StructA* data) {
-        std::string symbol{};//= symbols_to_string(data->symbol);
-        std::string exchange{};// = exchange_to_string(data->exchange);
-        std::string date{};// = getDateFromTimestamp(data->ns);
+    void asyncWrite(const StructA& data) {
+        std::string date = getDateFromTimestamp(data.ns);
 
         std::lock_guard<std::mutex> lock(mutex_); // 使用互斥锁确保线程安全
 
         // 在将新数据添加到缓冲区之前，首先检查日期是否发生了变化
-        if (last_date_[symbol] != "" && last_date_[symbol] != date) {
-            flushBuffer(symbol, exchange);  // 如果日期发生了变化，先保存缓冲区的数据
-            last_date_[symbol] = date;  // 更新日期记录
+        if (last_date_ != "" && last_date_ != date) {
+            flushBuffer();  // 如果日期发生了变化，先保存缓冲区的数据
+            last_date_ = date;  // 更新日期记录
         }
 
         // 将新数据添加到缓冲区
-        strucA_buffer_[symbol].push_back(*data);
+        strucA_buffer_.push_back(data);
 
         // 检查缓冲区是否已达到最大大小
-        if (strucA_buffer_[symbol].size() == MAX_BUFFER_SIZE) {
-            flushBuffer(symbol, exchange);  // 当缓冲区满时，保存缓冲区的数据
+        if (strucA_buffer_.size() == MAX_BUFFER_SIZE) {
+            flushBuffer();  // 当缓冲区满时，保存缓冲区的数据
         }
     }
 
 protected:
-    std::map<std::string, std::vector<StructA>> strucA_buffer_;
+    std::vector<StructA> strucA_buffer_;
 
     std::string formatFloat(double value) {
         std::stringstream ss;
@@ -175,20 +170,12 @@ protected:
         std::stringstream buffer;  // 使用一个字符串流来缓冲数据
 
         for (const auto& entry : data) {
-            buffer << entry.ns << ","
-                << entry.num1 << "," << entry.num2
+            buffer << entry.ns << "," << entry.recv_ns << ","
+                << entry.num1 << "," << entry.num2 << entry.num1 << ","
                 << entry.total_id << "," << entry.data_id;
 
-            /*
-            for (const auto& bid : entry.bids) {
-                buffer << formatFloat(bid.first) << "," << formatFloat(bid.second) << ",";
-            }
-            for (const auto& ask : entry.asks) {
-                buffer << formatFloat(ask.first) << "," << formatFloat(ask.second) << ",";
-            }*/
-
             // 移除最后一个逗号
-            buffer.seekp(-1, std::ios_base::cur);
+            //buffer.seekp(-1, std::ios_base::cur);
             buffer << "\n";
         }
 
@@ -196,26 +183,128 @@ protected:
         file.flush();          // 确保数据已经写入文件
     }
 
-    void flushBuffer(const std::string& symbol, const std::string& exchange) {
+    void flushBuffer() {
         // 确定路径和文件名
-        StructA& first_data = strucA_buffer_[symbol][0];
-        std::string current_date = getDateFromTimestamp(first_data.ns);
-        std::filesystem::path p = generatePath(symbol, exchange, current_date);  // 使用一个函数来生成路径
+        StructA& first_data = strucA_buffer_[0];
+        std::string cur_data = getDateFromTimestamp(first_data.ns);
+        std::filesystem::path p = generatePath(cur_data);  // 使用一个函数来生成路径
+        printf("generatePath %s\n", p.string().c_str());
 
         // 如果日期变化，关闭旧的文件句柄
-        if (current_date != last_date_[symbol]) {
-            std::filesystem::path last_path = generatePath(symbol, exchange, last_date_[symbol]);
+        if (last_date_!= "" && cur_data != last_date_) {
+            std::filesystem::path last_path = generatePath(last_date_);
             closeFile(last_path.string(), file_type_);
-            last_date_[symbol] = current_date;
+            last_date_ = cur_data;
         }
 
         // 根据file_type_决定如何写入
         if (file_type_ == "csv") {
-            writeToCSV(p, strucA_buffer_[symbol]);
+            writeToCSV(p, strucA_buffer_);
         } else if (file_type_ == "h5" || file_type_ == "hdf5") {
             // hdf5的写入逻辑
         }
 
-        strucA_buffer_[symbol].clear();
+        strucA_buffer_.clear();
+    }
+};
+
+class StructBStorager : public DataStorager {
+public:
+    StructBStorager(const std::string& dir, const std::string& file_type)
+            : DataStorager(dir, file_type) {
+        data_type_ = "StructB";
+    }
+
+    ~StructBStorager() {
+        std::lock_guard<std::mutex> lock(mutex_);  // 确保在此过程中没有其他线程尝试写入
+
+        flushBuffer();  // 保存缓冲区数据
+
+        for (auto& [path, file] : csv_open_files_) {
+            if (file.is_open()) {
+                file.close();  // 关闭文件
+            }
+        }
+        csv_open_files_.clear();  // 清空map
+    }
+
+    void asyncWrite(const StructB& data) {
+        std::string date = getDateFromTimestamp(data.ns);
+
+        std::lock_guard<std::mutex> lock(mutex_); // 使用互斥锁确保线程安全
+
+        // 在将新数据添加到缓冲区之前，首先检查日期是否发生了变化
+        if (last_date_ != "" && last_date_ != date) {
+            flushBuffer();  // 如果日期发生了变化，先保存缓冲区的数据
+            last_date_ = date;  // 更新日期记录
+        }
+
+        // 将新数据添加到缓冲区
+        structB_buffer_.push_back(data);
+
+        // 检查缓冲区是否已达到最大大小
+        if (structB_buffer_.size() == MAX_BUFFER_SIZE) {
+            flushBuffer();  // 当缓冲区满时，保存缓冲区的数据
+        }
+    }
+
+protected:
+    std::vector<StructB> structB_buffer_;
+
+    std::string formatFloat(double value) {
+        std::stringstream ss;
+        ss << std::fixed << value;
+        std::string s = ss.str();
+        s.erase(s.find_last_not_of('0') + 1, std::string::npos);
+        if (s.back() == '.') s.pop_back();
+        return s;
+    }
+
+    void writeToCSV(const std::filesystem::path& p, const std::vector<StructB>& data) {
+        if (csv_open_files_.find(p.string()) == csv_open_files_.end()) {
+            std::filesystem::create_directories(p.parent_path());
+            csv_open_files_[p.string()] = std::ofstream(p, std::ios::app);
+        }
+        std::ofstream& file = csv_open_files_[p.string()];
+
+        std::stringstream buffer;  // 使用一个字符串流来缓冲数据
+
+        for (const auto& entry : data) {
+            buffer << entry.ns << "," << entry.recv_ns << ","
+                   << entry.num1 << "," << entry.num2 << entry.num1 << ","
+                   << entry.data << ","
+                   << entry.total_id << "," << entry.data_id;
+
+            // 移除最后一个逗号
+            //buffer.seekp(-1, std::ios_base::cur);
+            buffer << "\n";
+        }
+
+        file << buffer.str();  // 一次性将所有数据写入文件
+        file.flush();          // 确保数据已经写入文件
+    }
+
+    void flushBuffer() {
+        // 确定路径和文件名
+        StructB& first_data = structB_buffer_[0];
+        std::string cur_data = getDateFromTimestamp(first_data.ns);
+        std::filesystem::path p = generatePath(cur_data);  // 使用一个函数来生成路径
+        printf("generatePath %s\n", p.string().c_str());
+
+        // 如果日期变化，关闭旧的文件句柄
+        if (last_date_!= "" && cur_data != last_date_) {
+            std::filesystem::path last_path = generatePath(last_date_);
+            closeFile(last_path.string(), file_type_);
+            last_date_ = cur_data;
+        }
+
+        // 根据file_type_决定如何写入
+        if (file_type_ == "csv") {
+            writeToCSV(p, structB_buffer_);
+        } else if (file_type_ == "h5" || file_type_ == "hdf5") {
+            // hdf5的写入逻辑
+        }
+
+        structB_buffer_.clear();
     }
 };

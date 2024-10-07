@@ -31,10 +31,17 @@ public:
      */
     void initialize();
 
+    void set_channel(xudp_channel *ch);
+
     void send(const std::vector<uint8_t>& data) const;
+
+    bool is_ready() const;
 private:
     using SenderChannel = forward::structs::SenderChannel;
     SenderChannel channel_;
+    struct addrinfo* to_;
+    xudp_channel *ch_{nullptr};
+    bool init_{false};
 };
 }
 }
