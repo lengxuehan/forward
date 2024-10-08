@@ -1,21 +1,26 @@
-#include "common/runtime_forward.h"
+#include "common/runtime_receiver.h"
 #include <csignal>
 #include <memory>
 #include <string>
 #include <utility>
+#include <iostream>
+
 #include "common/exception/errno_exception.h"
 #include "common/file_utility.h"
-#include "common/time_sync.h"
+#include "structs/receiver_channel.h"
+#include "classes/storager_mgr.h"
 
 namespace forward{
 namespace common{
 
-    RuntimeForward::RuntimeForward(nlohmann::json config)
+    using namespace forward::classes;
+
+    RuntimeReceiver::RuntimeReceiver(nlohmann::json config)
             : config_(std::move(config)){   // Must use constructor to create nlohmann::json object. Can not use initial list to create nlohmann::json. Initial list will add [...] automatically around original object
 
     }
 
-    void RuntimeForward::make_instance(){
+    void RuntimeReceiver::make_instance(){
         if (instance_ != nullptr){//double checker
             return;
         }
@@ -26,12 +31,12 @@ namespace common{
 
         // create a new instance
         std::string str_current_dir = FileUtility::get_process_path();
-        std::string path_to_config_file{str_current_dir + "/forward_config.json"};
+        std::string path_to_config_file{str_current_dir + "/receiver_config.json"};
         nlohmann::json config;     // root of config
         if (!load_configuration(path_to_config_file, config)){
             return;
         }
-        instance_ =  std::unique_ptr<RuntimeForward>(new RuntimeForward(config)); // because creator is protected. Use new to create this object. can't use make_unique
+        instance_ =  std::unique_ptr<RuntimeReceiver>(new RuntimeReceiver(config)); // because creator is protected. Use new to create this object. can't use make_unique
 
         // Verify whether signal handler was registered successfully. Otherwise, abort
         // the application with an error.
@@ -41,16 +46,22 @@ namespace common{
         }
     }
 
-    RuntimeForward& RuntimeForward::get_instance(){
+    RuntimeReceiver& RuntimeReceiver::get_instance(){
         if (instance_ == nullptr) {
-            RuntimeForward::make_instance();
+            RuntimeReceiver::make_instance();
         }
-        return *dynamic_cast<RuntimeForward*>(instance_.get());
+        return *dynamic_cast<RuntimeReceiver*>(instance_.get());
     }
 
-    void RuntimeForward::initialize(){
+    void RuntimeReceiver::initialize(){
         if (!initialized_) {
             parse_config();
+
+            for(auto& one: receivers_) {
+                one.initialize();
+            }
+
+            StorageMgr::get_instance().initialize();
 
             (void)pthread_setname_np(pthread_self(), "forward Main");
             (void)signal(SIGTERM, &signal_handler);
@@ -58,11 +69,16 @@ namespace common{
         }
     }
 
-    void RuntimeForward::run(){
-        // TODO
+    void RuntimeReceiver::run(){
+        for(auto& one : receivers_) {
+            threads_.emplace_back(&XUdpReceiver::run, &one);
+        }
     }
 
-    void RuntimeForward::shutdown(){
+    void RuntimeReceiver::shutdown(){
+        for(auto& one : receivers_) {
+            one.shutdown();
+        }
         for (auto& work_thread : threads_) {
             if (work_thread.joinable()) {
                 work_thread.join();
@@ -70,15 +86,26 @@ namespace common{
         }
     }
 
-    std::string RuntimeForward::get_forward_version(){
+    std::string RuntimeReceiver::get_forward_version(){
         return str_forward_version_;
     }
 
-    void RuntimeForward::parse_config() {
+    void RuntimeReceiver::parse_config() {
+        if(!config_.contains("receiver_channels")){
+            std::cout << "parse_config has no json key: receiver_channels" << std::endl;
+            return;
+        }
 
+        for(const auto& item : config_["receiver_channels"]) {
+            structs::ReceiverChannel info;
+            if(info.initialize(item)) {
+                StorageMgr::get_instance().add_storager(info.data_type_);
+                receivers_.emplace_back(XUdpReceiver(info));
+            }
+        }
     }
 
-    void RuntimeForward::un_initialize() noexcept {
+    void RuntimeReceiver::un_initialize() noexcept {
         if (instance_ != nullptr){
             auto tmp = instance_.release();
             delete tmp;

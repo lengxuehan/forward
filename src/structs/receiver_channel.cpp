@@ -8,21 +8,21 @@ namespace forward{
 namespace structs{
     bool ReceiverChannel::initialize(const nlohmann::json& json_info) {
         bool res{false};
-        res = JsonUnity::get(json_info,key_target_ip, str_ip_);
+        res = JsonUnity::get(json_info,key_local_ip, str_ip_);
         if(!res) {
-            std::cout << "ReceiverChannel::initialize get key " << key_target_ip << " failed." << std::endl;
+            std::cout << "ReceiverChannel::initialize get key " << key_local_ip << " failed." << std::endl;
             return false;
         }
 
-        res = JsonUnity::get(json_info,key_target_port, port_);
+        res = JsonUnity::get(json_info,key_local_port, port_);
         if(!res) {
-            std::cout << "ReceiverChannel::initialize get key" << key_target_port << "failed." << std::endl;
+            std::cout << "ReceiverChannel::initialize get key" << key_local_port << "failed." << std::endl;
             return false;
         }
 
-        res = JsonUnity::get(json_info,key_target_port, channel_id_);
+        res = JsonUnity::get(json_info,key_data_type, data_type_);
         if(!res) {
-            std::cout << "ReceiverChannel::initialize get key" << key_target_port << "failed." << std::endl;
+            std::cout << "ReceiverChannel::initialize get key" << key_data_type << "failed." << std::endl;
             return false;
         }
         return true;

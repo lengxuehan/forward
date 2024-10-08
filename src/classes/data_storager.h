@@ -58,6 +58,7 @@ struct alignas(64) TradesData {
 #include <filesystem>
 #include <map>
 #include <mutex>
+#include <boost/any.hpp>
 
 #include "structs/struct_a.h"
 #include "structs/struct_b.h"
@@ -69,6 +70,7 @@ public:
     DataStorager(const std::string& dir, const std::string& file_type)
         : dir_(dir), file_type_(file_type) {}
 
+    virtual void asyncWrite(const boost::any& data) = 0;
 protected:
     virtual void flushBuffer() = 0;
 
@@ -127,6 +129,17 @@ public:
         }
         csv_open_files_.clear();  // 清空map
     }
+    void asyncWrite(const boost::any& data) override {
+        try {
+            StructA data_a = boost::any_cast<StructA>(data);
+            asyncWrite(data_a);
+        } catch (const boost::bad_any_cast& e) {
+            std::cout << "Type mismatch: " << e.what() << std::endl;
+        }
+
+    }
+protected:
+    std::vector<StructA> strucA_buffer_;
 
     void asyncWrite(const StructA& data) {
         std::string date = getDateFromTimestamp(data.ns);
@@ -147,9 +160,6 @@ public:
             flushBuffer();  // 当缓冲区满时，保存缓冲区的数据
         }
     }
-
-protected:
-    std::vector<StructA> strucA_buffer_;
 
     std::string formatFloat(double value) {
         std::stringstream ss;
@@ -183,7 +193,7 @@ protected:
         file.flush();          // 确保数据已经写入文件
     }
 
-    void flushBuffer() {
+    void flushBuffer() override {
         // 确定路径和文件名
         StructA& first_data = strucA_buffer_[0];
         std::string cur_data = getDateFromTimestamp(first_data.ns);
@@ -228,6 +238,18 @@ public:
         csv_open_files_.clear();  // 清空map
     }
 
+    void asyncWrite(const boost::any& data) override {
+        try {
+            StructB data_b = boost::any_cast<StructB>(data);
+            asyncWrite(data_b);
+        } catch (const boost::bad_any_cast& e) {
+            std::cout << "Type mismatch: " << e.what() << std::endl;
+        }
+    }
+
+protected:
+    std::vector<StructB> structB_buffer_;
+
     void asyncWrite(const StructB& data) {
         std::string date = getDateFromTimestamp(data.ns);
 
@@ -247,9 +269,6 @@ public:
             flushBuffer();  // 当缓冲区满时，保存缓冲区的数据
         }
     }
-
-protected:
-    std::vector<StructB> structB_buffer_;
 
     std::string formatFloat(double value) {
         std::stringstream ss;
@@ -284,7 +303,7 @@ protected:
         file.flush();          // 确保数据已经写入文件
     }
 
-    void flushBuffer() {
+    void flushBuffer() override {
         // 确定路径和文件名
         StructB& first_data = structB_buffer_[0];
         std::string cur_data = getDateFromTimestamp(first_data.ns);

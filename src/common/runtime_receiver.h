@@ -1,4 +1,4 @@
-/** @defgroup RuntimeForward
+/** @defgroup RuntimeReceiver
  *  负责付费管理引擎和个性化配置在A核的业务逻辑
  */
 /** @addtogroup common
@@ -16,21 +16,23 @@
 #pragma once
 
 #include <queue>
+
 #include "runtime.h"
+#include "classes/xudp_receiver.h"
 
 namespace forward{
 namespace common{
-class RuntimeForward : public Runtime, std::enable_shared_from_this<RuntimeForward>{
+class RuntimeReceiver : public Runtime, std::enable_shared_from_this<RuntimeReceiver>{
 public:
-    ~RuntimeForward() override = default;
+    ~RuntimeReceiver() override = default;
     /**
      * Delete default copy constructor.
      * Ensure that objects of this type are not copyable and not movable.
      */
-    RuntimeForward(const RuntimeForward&) = delete;
-    RuntimeForward& operator =(RuntimeForward const&) = delete;
-    RuntimeForward(RuntimeForward&&) = delete;
-    RuntimeForward& operator=(RuntimeForward&&) = delete;
+    RuntimeReceiver(const RuntimeReceiver&) = delete;
+    RuntimeReceiver& operator =(RuntimeReceiver const&) = delete;
+    RuntimeReceiver(RuntimeReceiver&&) = delete;
+    RuntimeReceiver& operator=(RuntimeReceiver&&) = delete;
     /**
      * \brief Creates an instance of the Runtime.
      *
@@ -44,7 +46,7 @@ public:
     /**
      * \brief Return the Runtime instance.
      */
-    static RuntimeForward& get_instance();
+    static RuntimeReceiver& get_instance();
 
     /**
      * Read in configuration information and initialize runtime from it.
@@ -75,11 +77,11 @@ public:
     std::string get_forward_version();
 protected:
     /**
-     * \brief Constructor of RuntimeForward.
+     * \brief Constructor of RuntimeReceiver.
      *
-     * \param config The config object used by RuntimeForward.
+     * \param config The config object used by RuntimeReceiver.
      */
-    explicit RuntimeForward(nlohmann::json config);
+    explicit RuntimeReceiver(nlohmann::json config);
 
     /**
      * \brief Parse configuration file master_config.json
@@ -89,6 +91,7 @@ protected:
 private:
     nlohmann::json config_;                     // root json object of configuration
     std::string str_forward_version_{};         // forward version
+    std::vector<classes::XUdpReceiver> receivers_;
 
     /**
      * \brief The IPC Communication Manager.

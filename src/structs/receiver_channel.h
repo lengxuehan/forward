@@ -30,7 +30,6 @@ public:
     std::string str_ip_{};    // 目标端口
     std::string data_type_{}; // 数据类型
     uint32_t    port_{0};     // 端口
-    uint32_t    channel_id_{0};
 };
 }
 }

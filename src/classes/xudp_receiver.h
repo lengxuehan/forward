@@ -15,15 +15,15 @@
 
 #include <string>
 
-#include "xudp.h"
 #include "nlohmann/json.hpp"
-#include "structs/sender_channel.h"
+#include "xudp.h"
+#include "structs/receiver_channel.h"
 
 namespace forward{
 namespace classes{
     class XUdpReceiver {
     public:
-        explicit XUdpReceiver(const structs::SenderChannel& channel);
+        explicit XUdpReceiver(const structs::ReceiverChannel& channel);
         virtual ~XUdpReceiver() = default;
 
         /**
@@ -31,15 +31,16 @@ namespace classes{
          */
         void initialize();
 
-        void send(const std::vector<uint8_t>& data) const;
+        void run();
 
-        bool is_ready() const;
+        void shutdown();
+
     private:
-        using SenderChannel = forward::structs::SenderChannel;
-        SenderChannel channel_;
-        struct addrinfo* to_;
-        xudp_channel *ch_{nullptr};
+        using ReceiverChannel = forward::structs::ReceiverChannel;
+        ReceiverChannel channel_;
+        struct addrinfo* addr_info_;
         bool init_{false};
+        xudp *x_{nullptr};
     };
 }
 }
