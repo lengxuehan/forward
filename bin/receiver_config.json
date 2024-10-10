@@ -4,13 +4,10 @@
       "channel_id": 1,
       "local_ip": "172.22.42.142",
       "local_port": 8100,
-      "data_type": "StructA"
-    },
-    {
-      "channel_id": 2,
-      "local_ip": "172.22.42.142",
-      "local_port": 8101,
-      "data_type": "StructB"
+      "data_types": [
+        "StructA",
+        "StructB"
+      ]
     }
   ]
 }

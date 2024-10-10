@@ -2,14 +2,15 @@
 #include <vector>
 #include <fstream>
 
-#include "structs/struct_a.h"
-#include "structs/struct_b.h"
+#include "structs/pack_helper.h"
 #include "structs/sender_channel.h"
 
 #include "common/time_sync.h"
 #include "xudp_sender.h"
 #include "common/file_utility.h"
 #include "sender_mgr.h"
+#include "iguana/iguana.hpp"
+#include "structs/cmd_def.h"
 
 using namespace forward::classes;
 using namespace forward::structs;
@@ -53,22 +54,23 @@ int main() {
 
     srand(time(NULL));
 
-    if(senders.size() != 2) {
+    if(senders.size() < 1) {
         std::cout << "senders size is: " << senders.size() << std::endl;
         return 0;
     }
 
     while (true) {
-        StructA data_a;
-        data_a.ns = ts.get_ns(); // 本地时间戳,单位纳秒,整数
-        data_a.num1 =  rand() / 10000.0; // 随机浮点数
-        data_a.num2 =  rand() / 10000.0; // 随机浮点数
-        data_a.total_id = total_id; // 总编号
-        data_a.data_id = data_a_id; // 子编号
+        StructACmd data_a;
+        data_a.data.ns = ts.get_ns(); // 本地时间戳,单位纳秒,整数
+        data_a.data.num1 =  rand() / 10000.0; // 随机浮点数
+        data_a.data.num2 =  rand() / 10000.0; // 随机浮点数
+        data_a.data.total_id = total_id; // 总编号
+        data_a.data.data_id = data_a_id; // 子编号
 
         // 序列化数据
-        std::vector<uint8_t> data;
-        data_a.serialize(data);
+        std::string s;
+        iguana::to_pb(data_a.data, s);
+        std::vector<uint8_t> data = PackHelper::makeupSerializeDataForCmd(s, data_a.no);
 
         //printf("total id : %lu\n", data_a.ns);
         //printf("total id : %lu\n", data_a.total_id);
@@ -81,30 +83,32 @@ int main() {
             using_ns = ts.get_ns() - before_ns;
             total_ns += using_ns;
         }
-        data_a_id++;
 
-        StructB data_b;
-        data_b.ns = ts.get_ns(); // 本地时间戳,单位纳秒,整数
-        data_b.num1 =  rand() / 10000.0; // 随机浮点数
-        data_b.num2 =  rand() / 10000.0; // 随机浮点数
-        std::string hello{"hello"};
-        hello += std::to_string(data_a_id);
-        int idx = 0;
-        for(auto c : hello) {
-            data_b.data[idx++] = c;
-        }
-        data_b.total_id = total_id; // 总编号
-        data_b.data_id = data_a_id; // 子编号
+        if(senders.size() > 1) {
+            data_a_id++;
+            StructBCmd data_b;
+            data_b.data.ns = ts.get_ns(); // 本地时间戳,单位纳秒,整数
+            data_b.data.num1 =  rand() / 10000.0; // 随机浮点数
+            data_b.data.num2 =  rand() / 10000.0; // 随机浮点数
+            std::string hello{"hello"};
+            hello += std::to_string(data_a_id);
+            int idx = 0;
+            for(auto c : hello) {
+                data_b.data.data[idx++] = c;
+            }
+            data_b.data.total_id = total_id; // 总编号
+            data_b.data.data_id = data_a_id; // 子编号
 
-        // 序列化数据
-        data.clear();
-        data_b.serialize(data);
+            // 序列化数据
+            iguana::to_pb(data_b.data, s);
+            data = PackHelper::makeupSerializeDataForCmd(s, data_b.no);
 
-        before_ns = ts.get_ns();
-        if(senders[1].is_ready()) {
-            senders[0].send(data);
-            using_ns = ts.get_ns() - before_ns;
-            total_ns += using_ns;
+            before_ns = ts.get_ns();
+            if(senders[1].is_ready()) {
+                senders[0].send(data);
+                using_ns = ts.get_ns() - before_ns;
+                total_ns += using_ns;
+            }
         }
 
         data_a_id++;

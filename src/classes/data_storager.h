@@ -60,8 +60,7 @@ struct alignas(64) TradesData {
 #include <mutex>
 #include <boost/any.hpp>
 
-#include "structs/struct_a.h"
-#include "structs/struct_b.h"
+#include "structs/structs.h"
 
 using namespace forward::structs;
 

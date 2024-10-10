@@ -26,7 +26,7 @@ constexpr auto key_target_ip = "target_ip";
 constexpr auto key_target_port = "target_port";
 constexpr auto key_local_ip = "local_ip";
 constexpr auto key_local_port = "local_port";
-constexpr auto key_data_type = "data_type";
+constexpr auto key_data_type = "data_types";
 
 class BaseInfo {
 public:

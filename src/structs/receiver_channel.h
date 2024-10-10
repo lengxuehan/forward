@@ -28,7 +28,7 @@ public:
     virtual bool initialize(const nlohmann::json& json_info) override;
 
     std::string str_ip_{};    // 目标端口
-    std::string data_type_{}; // 数据类型
+    std::vector<std::string> data_types_{}; // 数据类型
     uint32_t    port_{0};     // 端口
 };
 }

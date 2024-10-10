@@ -47,6 +47,17 @@ public:
         return false;
     }
 
+    static bool get(const nlohmann::json& json, const std::string& key, std::vector<std::string>& vec_out) {
+        if(json.contains(key) && json[key].is_array()) {
+            for(auto& iter : json[key]) {
+                vec_out.push_back(iter.get<std::string>());
+                printf("get: %s\n", vec_out.back().c_str());
+            }
+            return true;
+        }
+        return false;
+    }
+
 protected:
     std::string str_ip_{};
     std::string data_type_{};

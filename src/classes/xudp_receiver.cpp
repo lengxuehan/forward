@@ -8,38 +8,38 @@
 #include "xudp.h"
 #include "xudp_receiver.h"
 #include "storager_mgr.h"
+#include "structs/pack_helper.h"
+#include "iguana/iguana.hpp"
 
 namespace forward {
 namespace classes {
 
     std::atomic_bool g_loop{true};
 
-    static void handle_recv_msg(char* p, uint32_t size, const char* data_type) {
+    static void handle_recv_msg(char* p, uint32_t size) {
         auto& mgr = StorageMgr::get_instance();
-        if(strcasecmp(data_type, "StructA") == 0) {
+        const Cmd *cmd = (const Cmd *)p;
+        if(cmd->no == 1) {
             StructA struct_a;
-            struct_a.deserialize(p, size);
+            iguana::from_pb(struct_a, std::string_view(cmd->data, cmd->len - sizeof(Cmd)));
+
             //printf("total id : %lu\n", struct_a.ns);
             //printf("total id : %lu\n", struct_a.total_id);
             //printf("total id : %lu\n", struct_a.data_id);
 
             struct_a.recv_ns = mgr.get_ns();
-            mgr.get_storager(data_type)->asyncWrite(struct_a);
-        } else if(strcasecmp(data_type, "StructB") == 0) {
+            mgr.get_storager("StructA")->asyncWrite(struct_a);
+        } else if(cmd->no == 2) {
             StructB struct_b;
-            struct_b.deserialize(p, size);
-            //printf("total id : %lu\n", struct_a.ns);
-            //printf("total id : %lu\n", struct_a.total_id);
-            //printf("total id : %lu\n", struct_a.data_id);
+            iguana::from_pb(struct_b, std::string_view(cmd->data, cmd->len - sizeof(Cmd)));
             struct_b.recv_ns = mgr.get_ns();
-            mgr.get_storager(data_type)->asyncWrite(struct_b);
+            mgr.get_storager("StructB")->asyncWrite(struct_b);
         }
     }
 
     struct connect{
         xudp *x;
         xudp_channel *ch;
-        const char* data_type;
         void (*handler)(struct connect *);
     };
 
@@ -62,7 +62,7 @@ namespace classes {
                 m = hdr->msg + i;
                 //printf("recv msg: %.*s", m->size, m->p);
                 printf("recv msg: %d\n", m->size);
-                handle_recv_msg(m->p, m->size, c->data_type);
+                handle_recv_msg(m->p, m->size);
             }
 
             xudp_recycle(hdr);
@@ -70,7 +70,7 @@ namespace classes {
         }
     }
 
-    static int epoll_add(xudp *x, int efd, const char* data_type)
+    static int epoll_add(xudp *x, int efd)
     {
         struct epoll_event e;
         struct connect *c;
@@ -90,7 +90,6 @@ namespace classes {
             c->ch = ch;
             c->x = x;
             c->handler = handler;
-            c->data_type = data_type;
 
             e.data.ptr = c;
 
@@ -179,11 +178,14 @@ namespace classes {
     }
 
     void XUdpReceiver::run() {
-        if (StorageMgr::get_instance().get_storager(channel_.data_type_) == nullptr) {
-            printf("XUdpReceiver::run cannot find data type %s in StorageMgr.\n",
-                   channel_.data_type_.c_str());
-            return;
+        for(auto &str : channel_.data_types_) {
+            if (StorageMgr::get_instance().get_storager(str) == nullptr) {
+                printf("XUdpReceiver::run cannot find data type %s in StorageMgr.\n",
+                       str.c_str());
+                return;
+            }
         }
+
         if(!init_) {
             printf("XUdpReceiver::run cannot run in case of init failed.\n");
             return;
@@ -191,7 +193,7 @@ namespace classes {
 
         int efd = epoll_create(1024);
 
-        epoll_add(x_, efd, channel_.data_type_.c_str());
+        epoll_add(x_, efd);
 
         loop(efd);
         std::cout << "XUdpReceiver::run listen ip:" << channel_.str_ip_

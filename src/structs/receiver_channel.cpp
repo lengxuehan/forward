@@ -20,7 +20,7 @@ namespace structs{
             return false;
         }
 
-        res = JsonUnity::get(json_info,key_data_type, data_type_);
+        res = JsonUnity::get(json_info,key_data_type, data_types_);
         if(!res) {
             std::cout << "ReceiverChannel::initialize get key" << key_data_type << "failed." << std::endl;
             return false;

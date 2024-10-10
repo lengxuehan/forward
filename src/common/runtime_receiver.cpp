@@ -99,7 +99,9 @@ namespace common{
         for(const auto& item : config_["receiver_channels"]) {
             structs::ReceiverChannel info;
             if(info.initialize(item)) {
-                StorageMgr::get_instance().add_storager(info.data_type_);
+                for(auto &str : info.data_types_) {
+                    StorageMgr::get_instance().add_storager(str);
+                }
                 receivers_.emplace_back(XUdpReceiver(info));
             }
         }
